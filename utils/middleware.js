@@ -1,7 +1,7 @@
 const validator = require('validator');
 
 exports.validateUserData = (req, res, next) => {
-    const { username, email, password } = req.body;
+    const { username, email, password, firstName, lastName } = req.body;
 
     const errors = {}
 
@@ -28,6 +28,19 @@ exports.validateUserData = (req, res, next) => {
     } else if (!validator.isStrongPassword(password)) {
         errors.password = 'Password must be at least 8 characters long, contain at least one lowercase letter, one uppercase letter, one number, and one special character';
     }
+
+    if (!firstName) {
+        errors.firstName = 'First name is required';
+    } else if (!validator.isAlpha(firstName)) {
+        errors.firstName = 'First name must contain only letters';
+    }
+
+    if (!lastName) {
+        errors.lastName = 'Last name is required';
+    }else if (!validator.isAlpha(lastName)) {
+        errors.lastName = 'Last name must contain only letters';
+    }
+
 
     if (Object.keys(errors).length > 0) {
         return res.status(400).json(errors);

@@ -1,5 +1,5 @@
 const mongoose = require('mongoose');
-const { videoSchema } = require('./video.schema');
+
 
 
 const userSchema = new mongoose.Schema({
@@ -17,15 +17,35 @@ const userSchema = new mongoose.Schema({
         type: String,
         required: true
     },
-    favorites: [videoSchema]
-    ,
+    firstName: {
+        type: String,
+        required: true
+    },
+    lastName: {
+        type: String,
+        required: true
+    },
     playlists: [{
-        name: {
-            type: String,
-            required: true
-        },
-        videos: [videoSchema]
+        type: mongoose.Schema.Types.ObjectId,
+        ref: 'Playlist'
+    }],
+    favorites: [{
+        type: mongoose.Schema.Types.ObjectId,
+        ref: 'Video'
+    }],
+    history: [{
+        type: mongoose.Schema.Types.ObjectId,
+        ref: 'Video'
+    }],
+    comments: [{
+        type: mongoose.Schema.Types.ObjectId,
+        ref: 'Comment'
+    }],
+    searches: [{
+        type: mongoose.Schema.Types.ObjectId,
+        ref: 'Search'
     }]
+
     
 });
 
