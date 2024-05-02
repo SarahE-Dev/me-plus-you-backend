@@ -44,7 +44,14 @@ const userSchema = new mongoose.Schema({
     searches: [{
         type: mongoose.Schema.Types.ObjectId,
         ref: 'Search'
-    }]
+    }],
+    watchLater: [{
+        type: mongoose.Schema.Types.ObjectId,
+        ref: 'Video'
+    }],
+    avatar: {
+        type: String
+    }
 
     
 });

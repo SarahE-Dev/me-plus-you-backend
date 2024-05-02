@@ -16,7 +16,8 @@ exports.createUser = async (req, res) => {
             email: req.body.email,
             password: hashedPassword,
             firstName: req.body.firstName,
-            lastName: req.body.lastName
+            lastName: req.body.lastName,
+            avatar: req.body.avatar
         });
         await user.save();
         const payload = {
@@ -24,7 +25,8 @@ exports.createUser = async (req, res) => {
             email: user.email,
             id: user._id,
             firstName: user.firstName,
-            lastName: user.lastName
+            lastName: user.lastName,
+            avatar: user.avatar
         };
         const token = jwt.sign(payload, process.env.SECRET, { expiresIn: '24h' });
         res.status(200)
@@ -57,7 +59,8 @@ exports.loginUser = async (req, res) => {
             email: user.email,
             id: user._id,
             firstName: user.firstName,
-            lastName: user.lastName
+            lastName: user.lastName,
+            avatar: user.avatar
         };
         const token = jwt.sign(payload, process.env.SECRET, { expiresIn: '24h' });
         res.status(200)
@@ -113,7 +116,8 @@ exports.addComment = async (req, res) => {
         const comment = new Comment({
             content: req.body.content,
             user: user._id,
-            video: req.body.video
+            video: req.body.video,
+            avatar: req.body.avatar
         });
         await comment.save();
         user.comments.push(comment._id);
@@ -155,7 +159,7 @@ exports.addFavorite = async (req, res) => {
 
 exports.addHistory = async (req, res) => {
     try {
-        const user = await User.findById({_id: req.body.user});
+        const user = await User.findById({_id: req.body.user})
         if (!user) {
             return res.status(404).json({ error: 'User not found' });
         }
@@ -174,6 +178,8 @@ exports.addHistory = async (req, res) => {
             });
         }
         await video.save();
+        const updatedArray = user.history.filter(vid => vid._id !== video._id);
+        user.history = updatedArray;
         user.history.push(video._id);
         await user.save();
         res.status(200).json({ message: 'History added', video: video });
@@ -184,7 +190,7 @@ exports.addHistory = async (req, res) => {
 
 exports.removeFavorite = async (req, res) => {
     try {
-        const user = await User.findById({_id: req.body.user});
+        const user = await User.findOne({_id: req.body.user});
         if (!user) {
             return res.status(404).json({ error: 'User not found' });
         }
@@ -192,10 +198,8 @@ exports.removeFavorite = async (req, res) => {
         if(!video){
             return res.status(404).json({ error: 'Video not found' });
         }
-        const index = user.favorites.indexOf(video._id);
-        if (index > -1) {
-            user.favorites.splice(index, 1);
-        }
+        const newFaves = user.favorites.filter(fave => fave.videoId !== req.body.videoId);
+        user.favorites = newFaves;
         await user.save();
         res.status(200).json({ message: 'Favorite removed', video: video });
     }catch (error) {
@@ -230,7 +234,7 @@ exports.addVideoToPlaylist = async (req, res) => {
         await video.save();
         playlist.videos.push(video._id);
         await playlist.save();
-        res.status(200).json({ message: 'Video added to playlist', video: video });
+        res.status(200).json({ message: 'Video added to playlist', video: video, playlist: playlist});
     }
     catch (error) {
         res.status(500).json({ error: 'Error adding video to playlist', details: error });
@@ -331,7 +335,19 @@ exports.updateUser = async (req, res) => {
             user.lastName = req.body.lastName;
         }
         await user.save();
-        res.status(200).json({ message: 'User updated', user: user });
+        const payload = {
+            username: user.username,
+            email: user.email,
+            id: user._id,
+            firstName: user.firstName,
+            lastName: user.lastName,
+            avatar: user.avatar
+        };
+        // const userToSend = user.populate({path: 'playlists', populate: {path: 'videos'}}).populate({path: 'favorites'}).populate({path: 'comments'}).populate({path: 'searches'}).populate({path: 'watchLater'}).populate({path: 'history'});
+        const token = jwt.sign(payload, process.env.SECRET, { expiresIn: '24h' });
+        res.status(200)
+            .cookie('youtube-jwt', token)
+            .json({ message: 'User updated', token: token, user: user});
     }catch (error) {
         res.status(500).json({ error: 'Error updating user', details: error });
     }
@@ -355,10 +371,20 @@ exports.editComment = async (req, res) => {
 
 exports.deleteComment = async (req, res) => {
     try {
+        const user = await User.findById({_id: req.body.user});
+        if (!user) {
+            return res.status(404).json({ error: 'User not found' });
+        }
+
         const comment = await Comment.findByIdAndDelete({_id: req.body.comment});
         if (!comment) {
             return res.status(404).json({ error: 'Comment not found' });
         }
+        const index = user.comments.indexOf(comment._id);
+        if (index > -1) {
+            user.comments.splice(index, 1);
+        }
+        await user.save();
         res.status(200).json({ message: 'Comment deleted', comment: comment });
     }catch (error) {
         res.status(500).json({ error: 'Error deleting comment', details: error });
@@ -415,5 +441,158 @@ exports.getAllUserComments = async (req, res) => {
     }
 }
 
+exports.getEveryUserCommentForVideo = async (req, res) => {
+    try {
+        const comments = await Comment.find({video: req.params.video}).populate('user');
+        res.status(200).json({ message: 'Comments for video', comments: comments });
+    }catch (error) {
+        res.status(500).json({ error: 'Error getting comments for video', details: error });
+    }
+}
 
+exports.populateAllAUserInfo = async (req, res) => {
+    try {
+        const user = await User.findById({_id: req.body.user}).populate({path: 'playlists', populate: {path: 'videos'}}).populate({path: 'favorites'}).populate({path: 'comments'}).populate({path: 'searches'}).populate({path: 'watchLater'}).populate({path: 'history'});
+        if (!user) {
+            return res.status(404).json({ error: 'User not found' });
+        }
+        res.status(200).json({ message: 'User info', user: user });
+    }
+    catch (error) {
+        res.status(500).json({ error: 'Error getting user info', details: error });
+    }
+}
 
+exports.addWatchLater = async (req, res) => {
+    try {
+        const user = await User.findById({_id: req.body.user});
+        if (!user) {
+            return res.status(404).json({ error: 'User not found' });
+        }
+        let video = await Video.findOne({videoId: req.body.videoId});
+        if(!video){
+            video = new Video({
+                videoId: req.body.videoId,
+                title: req.body.title,
+                description: req.body.description,
+                thumbnailUrl: req.body.thumbnailUrl,
+                publishedAt: req.body.publishedAt,
+                channelTitle: req.body.channelTitle,
+                channelId: req.body.channelId,
+                channelImage: req.body.channelImage
+
+            });
+        }
+        await video.save();
+        user.watchLater.push(video._id);
+        await user.save();
+        res.status(200).json({ message: 'Video added to watch later', video: video });
+    }catch (error) {    
+        res.status(500).json({ error: 'Error adding video to watch later', details: error });
+    }
+}
+
+exports.removeWatchLater = async (req, res) => {
+    try {
+        const user = await User.findById({_id: req.body.user});
+        if (!user) {
+            return res.status(404).json({ error: 'User not found' });
+        }
+        const video = await Video.findOne({videoId: req.body.videoId});
+        if(!video){
+            return res.status(404).json({ error: 'Video not found' });
+        }
+        const index = user.watchLater.indexOf(video._id);
+        if (index > -1) {
+            user.watchLater.splice(index, 1);
+        }
+        await user.save();
+        res.status(200).json({ message: 'Video removed from watch later', video: video });
+    }catch (error) {
+        res.status(500).json({ error: 'Error removing video from watch later', details: error });
+    }
+}
+
+exports.addToHistory = async (req, res) => {
+    try {
+        const user = await User.findById({_id: req.body.user});
+        if (!user) {
+            return res.status(404).json({ error: 'User not found' });
+        }
+        let video = await Video.findOne({videoId: req.body.videoId});
+        if(!video){
+            video = new Video({
+                videoId: req.body.videoId,
+                title: req.body.title,
+                description: req.body.description,
+                thumbnailUrl: req.body.thumbnailUrl,
+                publishedAt: req.body.publishedAt,
+                channelTitle: req.body.channelTitle,
+                channelId: req.body.channelId,
+                channelImage: req.body.channelImage
+
+            });
+        }
+        await video.save();
+        if(user.history.includes(video._id)){
+            user.history = user.history.filter(elem=>elem._id !== video._id);
+        }
+        user.history.push(video._id);
+        
+        await user.save();
+        res.status(200).json({ message: 'Video added to history', video: video });
+    }catch (error) {
+        res.status(500).json({ error: 'Error adding video to history', details: error });
+    }
+}
+
+exports.removeVideoFromHistory = async (req, res) => {
+    try {
+        const user = await User.findById({_id: req.body.user});
+        if (!user) {
+            return res.status(404).json({ error: 'User not found' });
+        }
+        const video = await Video.findOne({videoId: req.body.videoId});
+        if(!video){
+            return res.status(404).json({ error: 'Video not found' });
+        }
+        const index = user.history.indexOf(video._id);
+        if (index > -1) {
+            user.history.splice(index, 1);
+        }
+        await user.save();
+        res.status(200).json({ message: 'Video removed from history', video: video });
+    }catch (error) {
+        res.status(500).json({ error: 'Error removing video from history', details: error });
+    }
+}
+
+exports.getAllUserCommentsForVideo = async (req, res) => {
+    try {
+        const comments = await Comment.find({video: req.params.video}).populate('user');
+        res.status(200).json({ message: 'Comments for video', comments: comments });
+    }catch (error) {
+        res.status(500).json({ error: 'Error getting comments for video', details: error });
+    }
+}
+
+exports.removePlaylist = async (req, res) => {
+    try {
+        const playlist = await Playlist.findByIdAndDelete({_id: req.body.playlist});
+        if (!playlist) {
+            return res.status(404).json({ error: 'Playlist not found' });
+        }
+        const user = await User.findOne({_id: req.body.user});
+        if (!user) {
+            return res.status(404).json({ error: 'User not found' });
+        }
+        const index = user.playlists.indexOf(playlist._id);
+        if (index > -1) {
+            user.playlists.splice(index, 1);
+        }
+        await user.save();
+        res.status(200).json({ message: 'Playlist deleted', playlist: playlist, user: user });
+    }catch (error) {
+        res.status(500).json({ error: 'Error deleting playlist', details: error });
+    }
+}
