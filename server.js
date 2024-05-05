@@ -17,7 +17,9 @@ mongoose.connect(process.env.DB)
 
 app.use('/api/users', userRouter);
 
-
+app.get('/', (req, res) => {
+    res.render('index');
+})
 
 
 app.listen(port, () => {
