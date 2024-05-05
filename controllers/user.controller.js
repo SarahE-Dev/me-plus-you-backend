@@ -159,7 +159,7 @@ exports.addFavorite = async (req, res) => {
 
 exports.addHistory = async (req, res) => {
     try {
-        const user = await User.findById({_id: req.body.user})
+        const user = await User.findById({_id: req.body.user}).populate({path: 'history'});
         if (!user) {
             return res.status(404).json({ error: 'User not found' });
         }
@@ -178,8 +178,10 @@ exports.addHistory = async (req, res) => {
             });
         }
         await video.save();
-        const updatedArray = user.history.filter(vid => vid._id !== video._id);
-        user.history = updatedArray;
+        const index = user.history.findIndex(elem => elem.videoId === video.videoId);
+        if(index > -1){
+            user.history.splice(index, 1);
+        }
         user.history.push(video._id);
         await user.save();
         res.status(200).json({ message: 'History added', video: video });
