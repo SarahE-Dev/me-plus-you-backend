@@ -5,7 +5,7 @@
   "main": "server.js",
   "scripts": {
     "test": "echo \"Error: no test specified\" && exit 1",
-    "start": "node server.js"
+    "start": "DB=mongodb+srv://seatherlyprsvr:3U5vNZq0rWnK3Fm1@meplusyoucluster.u3nm4se.mongodb.net/?retryWrites=true&w=majority&appName=mePlusYouCluster secret=controllIsAnIllusion node server.js"
   },
   "keywords": [],
   "author": "",
