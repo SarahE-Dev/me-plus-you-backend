@@ -11,7 +11,7 @@ app.use(express.json());
 const baseURL = process.env.BASE_URL || 'http://localhost:5173';
 app.use(cors({ origin: baseURL, credentials: true}));
 
-mongoose.connect(process.env.DATABASE_URL)
+mongoose.connect(process.env.DB)
     .then(() => console.log('Connected to MongoDB'))
     .catch(err => console.error('Could not connect to MongoDB', err));
 
