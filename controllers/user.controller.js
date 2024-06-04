@@ -185,6 +185,7 @@ exports.addHistory = async (req, res) => {
         const foundVideo = user.history.indexOf(video._id);
         if(foundVideo !== -1){
             user.history.splice(foundVideo, 1);
+            user.history.push(video._id)
             await user.save()
             res.status(200).json({ message: 'History updated with pull', video})
         }else{
