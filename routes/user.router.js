@@ -5,7 +5,7 @@ const router = express.Router();
 const {validateUserData} = require('../utils/middleware')
 
 
-const {createUser, loginUser, deleteUser, logoutUser, addPlaylist, addFavorite, addHistory, addComment, removeFavorite, addVideoToPlaylist, addSearchQuery, removeVideoFromPlaylist, getAllUserPlaylists, getAllUserFavorites, getAllUserComments, populateAllAUserInfo, addToHistory, addWatchLater, getAllUserCommentsForVideo, removePlaylist, deleteComment, editComment, updateUser} = require('../controllers/user.controller');
+const {createUser, loginUser, deleteUser, logoutUser, addPlaylist, addFavorite, addHistory, addComment, removeFavorite, addVideoToPlaylist, addSearchQuery, removeVideoFromPlaylist, getAllUserPlaylists, getAllUserFavorites, getAllUserComments, populateAllAUserInfo, addToHistory, addWatchLater, getAllUserCommentsForVideo, removePlaylist, deleteComment, editComment, updateUser, clearHistory} = require('../controllers/user.controller');
 
 router.post('/signup', validateUserData, createUser);
 
@@ -39,7 +39,7 @@ router.get('/get-user-comments', getAllUserComments)
 
 router.post('/get-all-user-info', populateAllAUserInfo)
 
-router.post('/add-to-history', addToHistory)
+router.post('/add-to-history', addHistory)
 
 router.post('/add-to-watch-later', addWatchLater)
 
@@ -52,6 +52,8 @@ router.post('/delete-comment', deleteComment)
 router.post('/edit-comment', editComment)
 
 router.post('/update-user', updateUser)
+
+router.post('/clear-history', clearHistory)
 
 router.get('/', (req, res) => {
     res.send('Hello from user router');

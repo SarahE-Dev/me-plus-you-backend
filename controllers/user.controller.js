@@ -159,13 +159,13 @@ exports.addFavorite = async (req, res) => {
 
 exports.addHistory = async (req, res) => {
     try {
-        const user = await User.findById({_id: req.body.user}).populate({path: 'history'});
+        const user = await User.findById({_id: req.body.user})
         if (!user) {
             return res.status(404).json({ error: 'User not found' });
         }
         let video = await Video.findOne({videoId: req.body.videoId});
         if(!video){
-            video = new Video({
+            const newVideo = new Video({
                 videoId: req.body.videoId,
                 title: req.body.title,
                 description: req.body.description,
@@ -176,17 +176,40 @@ exports.addHistory = async (req, res) => {
                 channelImage: req.body.channelImage
 
             });
+            await newVideo.save();
+            user.history.push(newVideo._id);
+            await user.save();
+            res.status(200).json({ message: 'History added with new', video: newVideo });
+            return
         }
-        await video.save();
-        const index = user.history.findIndex(elem => elem.videoId === video.videoId);
-        if(index > -1){
-            user.history.splice(index, 1);
+        const foundVideo = user.history.indexOf(video._id);
+        if(foundVideo !== -1){
+            user.history.splice(foundVideo, 1);
+            await user.save()
+            res.status(200).json({ message: 'History updated with pull', video})
+        }else{
+            user.history.push(video._id)
+            await user.save()
+            res.json({message: 'history success', video})
         }
-        user.history.push(video._id);
-        await user.save();
-        res.status(200).json({ message: 'History added', video: video });
+
+        
     }catch (error) {
         res.status(500).json({ error: 'Error adding history', details: error });
+    }
+}
+
+exports.clearHistory=async(req, res)=>{
+    try {
+        const user = await User.findOne({_id: req.body.user})
+        if(!user){
+            return res.status(404).json({ error: 'User not found' });
+        }
+        user.history = [];
+        await user.save();
+        res.status(200).json({ message: 'History cleared' });
+    } catch (error) {
+        res.status(500).json({ error: 'Error clearing history.', details: error });
     }
 }
 

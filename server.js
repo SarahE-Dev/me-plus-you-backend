@@ -8,7 +8,7 @@ const cors = require('cors');
 const userRouter = require('./routes/user.router');
 app.use(logger('dev'));
 app.use(express.json());
-const baseURL = process.env.BASE_URL || 'http://localhost:5173';
+const baseURL = process.env.BASE_URL 
 app.use(cors({ origin: baseURL, credentials: true}));
 
 mongoose.connect(process.env.DB)
