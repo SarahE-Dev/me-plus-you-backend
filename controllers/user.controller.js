@@ -360,6 +360,9 @@ exports.updateUser = async (req, res) => {
         if(req.body.lastName){
             user.lastName = req.body.lastName;
         }
+        if(req.body.avatar){
+            user.avatar = req.body.avatar;
+        }
         await user.save();
         const payload = {
             username: user.username,
